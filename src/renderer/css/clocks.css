@@ -1,0 +1,202 @@
+/* ---------------------------------------------------------------
+   Clock faces
+   Everything scales from #clock-host's font-size, which app.js sets
+   from the window size × the user's font scale.
+   --------------------------------------------------------------- */
+
+#clock-host {
+  font-size: var(--clock-size, 120px);
+  line-height: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ============================ 1. FLIP (Fliqlo) ============================ */
+
+.flip {
+  display: flex; align-items: center; gap: .07em;
+  perspective: 1400px;
+  font-family: var(--font-clock);
+}
+
+.flip-group { display: flex; align-items: center; gap: .1em; }
+.flip-group.seconds { font-size: .5em; align-self: flex-end; margin-bottom: .1em; }
+
+.flip-card {
+  position: relative;
+  width: 1.46em; height: 1.32em;
+  border-radius: .13em;
+  background: var(--card);          /* fills any sub-pixel seam between the halves */
+  box-shadow: var(--card-shadow);
+  font-weight: var(--clock-weight, 700);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+}
+
+.flip-card .fc {
+  position: absolute; left: 0; width: 100%; height: 50%;
+  overflow: hidden;
+  background: var(--card);
+  color: var(--card-fg);
+  backface-visibility: hidden;
+}
+.flip-card .fc::after {
+  /* subtle sheen across each half, like light on plastic */
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 60%);
+  pointer-events: none;
+}
+
+.flip-card .top    { top: 0;    border-radius: .13em .13em 0 0; border-bottom: 1px solid var(--card-line); }
+.flip-card .bottom { bottom: 0; border-radius: 0 0 .13em .13em; }
+.flip-card .bottom::after { background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,0) 55%); }
+
+.flip-card .fc span {
+  position: absolute; left: 0; width: 100%; height: 200%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.12em;   /* digits nearly fill the card, as on the real Fliqlo */
+}
+.flip-card .top span    { top: 0; }
+.flip-card .bottom span { bottom: 0; }
+
+.flip-card .flap-front { z-index: 3; transform-origin: 50% 100%; }
+.flip-card .flap-back  { z-index: 2; transform-origin: 50% 0%; transform: rotateX(90deg); }
+
+.flip-card.flipping .flap-front { animation: flap-fall var(--flip-dur, .34s) cubic-bezier(.36,0,.66,-.06) forwards; }
+.flip-card.flipping .flap-back  { animation: flap-rise var(--flip-dur, .34s) var(--flip-dur, .34s) cubic-bezier(.34,1.2,.64,1) forwards; }
+
+@keyframes flap-fall { to { transform: rotateX(-90deg); filter: brightness(.72); } }
+@keyframes flap-rise { from { transform: rotateX(90deg); filter: brightness(.72); } to { transform: rotateX(0); filter: brightness(1); } }
+
+.flip-sep {
+  display: flex; flex-direction: column; gap: .28em;
+  margin: 0 .06em; opacity: .8;
+}
+.flip-sep i { width: .1em; height: .1em; border-radius: 50%; background: var(--fg-dim); display: block; }
+.flip:not(.show-colon) .flip-sep { display: none; }
+
+/* AM/PM tucked into the top-left corner of the hour card, as on Fliqlo */
+.flip-meridiem {
+  position: absolute; z-index: 5;
+  top: 6.5%; left: 7%;                 /* % keeps it anchored as the card scales */
+  font-size: .165em; font-weight: 700; letter-spacing: .02em;
+  color: var(--card-fg); opacity: .95;
+  pointer-events: none;
+}
+
+.flip-label {
+  position: absolute; bottom: .07em; left: 0; width: 100%;
+  text-align: center; font-size: .12em; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--fg-dim); opacity: .55;
+}
+
+/* ============================ 2. DIGITAL ============================ */
+
+.digital {
+  display: flex; align-items: baseline; gap: .04em;
+  font-family: var(--font-clock);
+  font-weight: var(--clock-weight, 200);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  color: var(--fg);
+  text-shadow: 0 6px 40px rgba(0,0,0,.35);
+}
+.digital .seg { display: inline-block; }
+.digital .colon { opacity: .85; margin: 0 .02em; }
+.digital.blink .colon { animation: colon-blink 2s steps(1) infinite; }
+@keyframes colon-blink { 50% { opacity: .18; } }
+.digital .secs { font-size: .34em; color: var(--accent); margin-left: .12em; font-weight: 400; align-self: flex-end; margin-bottom: .16em; }
+.digital .mer  { font-size: .2em; letter-spacing: .2em; color: var(--fg-dim); margin-left: .16em; font-weight: 600; }
+body.accent-glow .digital { text-shadow: 0 0 .34em rgba(255,255,255,.10), 0 6px 40px rgba(0,0,0,.4); }
+
+.digital.mono { font-family: var(--font-mono); font-weight: 300; letter-spacing: -.04em; }
+
+/* ============================ 3. ANALOG ============================ */
+
+.analog { width: 3.2em; height: 3.2em; position: relative; }
+.analog svg { width: 100%; height: 100%; overflow: visible; }
+.analog .dial {
+  fill: var(--glass-tint-b);
+  stroke: var(--stroke); stroke-width: 1;
+}
+.analog .tick { stroke: var(--fg-dim); stroke-width: 1.2; opacity: .5; }
+.analog .tick.major { stroke: var(--fg); stroke-width: 2.4; opacity: .85; }
+.analog .num { fill: var(--fg-dim); font-size: 7px; text-anchor: middle; dominant-baseline: middle;
+               font-family: var(--font-ui); font-weight: 600; stroke: none; }
+.analog .hand { stroke: var(--fg); stroke-linecap: round; filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)); }
+.analog .hand.hour { stroke-width: 4.4; }
+.analog .hand.min  { stroke-width: 3; }
+.analog .hand.sec  { stroke: var(--accent); stroke-width: 1.4; }
+.analog .pin { fill: var(--accent); stroke: none; }
+.analog .pin-core { fill: var(--fg); stroke: none; }
+.analog .rim { fill: none; stroke: var(--glass-edge); stroke-width: 1.2; opacity: .5; }
+
+/* ============================ 4. RING ============================ */
+
+.ring { width: 3.4em; height: 3.4em; position: relative; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-linecap: round; }
+.ring .track { stroke: var(--hover); }
+.ring .arc-h { stroke: var(--accent); }
+.ring .arc-m { stroke: var(--accent-2); }
+.ring .arc-s { stroke: var(--accent-3); }
+.ring .center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .04em;
+}
+.ring .center b { font-size: .58em; font-weight: var(--clock-weight, 250); font-family: var(--font-clock); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.ring .center small { font-size: .12em; letter-spacing: .3em; text-transform: uppercase; color: var(--fg-dim); }
+
+/* ============================ 5. WORD ============================ */
+
+.word {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: .12em .16em;
+  font-size: .3em;
+  font-weight: var(--clock-weight, 600);
+  letter-spacing: .04em;
+  font-family: var(--font-clock);
+}
+.word span {
+  color: var(--fg-dim);
+  opacity: .16;
+  text-align: center;
+  transition: opacity .5s var(--ease), color .5s var(--ease), text-shadow .5s var(--ease);
+}
+.word span.on {
+  opacity: 1; color: var(--fg);
+}
+body.accent-glow .word span.on { text-shadow: 0 0 .5em var(--accent); }
+
+/* ============================ 6. BINARY ============================ */
+
+.binary { display: flex; flex-direction: column; align-items: center; gap: .1em; }
+.binary-grid { display: flex; gap: .14em; align-items: flex-start; }
+.binary .col { display: flex; flex-direction: column; gap: .08em; align-items: center; }
+.binary .col.m { margin-left: .1em; }
+.binary .col.s { margin-left: .1em; }
+.binary .bit {
+  width: .17em; height: .17em; border-radius: 50%;
+  border: .02em solid var(--stroke);
+  background: var(--hover);
+  transition: background .25s var(--ease), box-shadow .25s var(--ease), transform .25s var(--ease);
+}
+.binary .bit.spacer { visibility: hidden; }
+.binary .bit.on {
+  background: var(--accent); border-color: transparent;
+  box-shadow: 0 0 .16em var(--accent); transform: scale(1.06);
+}
+.binary .col.m .bit.on { background: var(--accent-2); box-shadow: 0 0 .16em var(--accent-2); }
+.binary .col.s .bit.on { background: var(--accent-3); box-shadow: 0 0 .16em var(--accent-3); }
+.binary .val {
+  font-size: .13em; color: var(--fg-dim); font-variant-numeric: tabular-nums;
+  margin-bottom: .5em; font-weight: 600;
+}
+.binary-labels {
+  align-self: stretch; display: grid; grid-template-columns: repeat(3, 1fr);
+  margin-top: .1em;
+  font-size: .085em; letter-spacing: .34em; color: var(--fg-dim); text-transform: uppercase;
+}
+.binary-labels span { text-align: center; }

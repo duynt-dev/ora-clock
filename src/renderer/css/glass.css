@@ -1,0 +1,107 @@
+/* ---------------------------------------------------------------
+   Liquid glass
+   Layers, outside → in:
+     1. .glass          blur + saturate backdrop, tinted gradient
+     2. .glass::before  specular sheen that follows the pointer
+     3. .glass::after   inner edge highlight (the "thick glass" rim)
+     4. .liquid-layer   optional SVG displacement for a wobbling refraction
+   --------------------------------------------------------------- */
+
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(135deg, var(--glass-tint-a), var(--glass-tint-b) 42%, var(--glass-tint-a));
+  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(185%) brightness(1.06);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(185%) brightness(1.06);
+  border: 1px solid var(--stroke);
+  box-shadow:
+    0 10px 34px rgba(0,0,0,.34),
+    0 2px 8px rgba(0,0,0,.18),
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 -1px 0 rgba(255,255,255,.08),
+    inset 0 0 26px rgba(255,255,255,.05);
+  overflow: hidden;
+}
+
+/* pointer-tracked specular highlight */
+.glass::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(
+    240px 240px at var(--mx, 50%) var(--my, 0%),
+    rgba(255,255,255,.22), rgba(255,255,255,.06) 42%, transparent 68%
+  );
+  opacity: .9;
+  transition: opacity .3s var(--ease);
+  pointer-events: none;
+}
+
+/* refracted rim: bright at the top-left, dim at the bottom-right */
+.glass::after {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    var(--glass-edge), transparent 30%, transparent 70%, rgba(255,255,255,.18));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* The wobble. Kept on its own layer so that if the browser refuses
+   `backdrop-filter: url()`, the plain blur above still renders.
+   It is absolutely positioned even when idle — as a static child it
+   would become a flex item and push the panel's real content around. */
+.glass > .liquid-layer {
+  position: absolute; inset: 0; z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+}
+body.liquid .glass > .liquid-layer {
+  inset: -20px;
+  backdrop-filter: url(#liquid);
+  -webkit-backdrop-filter: url(#liquid);
+  opacity: .55;
+}
+
+/* glass off → flat translucent surfaces */
+body.no-glass .glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--panel-solid);
+}
+body.no-glass .glass::before,
+body.no-glass .glass > .liquid-layer { display: none; }
+
+/* The floating chrome sits right on top of the clock, so it gets an opaque
+   base under the tint plus a slightly heavier rim. */
+#dock, #player-bar, #focus-hud {
+  background:
+    linear-gradient(135deg, var(--glass-tint-a), var(--glass-tint-b) 42%, var(--glass-tint-a)),
+    color-mix(in srgb, var(--panel-solid) 55%, transparent);
+  box-shadow:
+    0 14px 40px rgba(0,0,0,.42),
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 0 30px rgba(255,255,255,.06);
+}
+
+body.accent-glow #dock,
+body.accent-glow #player-bar,
+body.accent-glow #panel {
+  box-shadow:
+    0 14px 40px rgba(0,0,0,.42),
+    0 0 42px -14px var(--accent),
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 0 30px rgba(255,255,255,.06);
+}
+
+/* glassy chips reuse the same treatment at a smaller scale */
+.world-chip {
+  background: linear-gradient(135deg, var(--glass-tint-a), var(--glass-tint-b));
+  backdrop-filter: blur(calc(var(--glass-blur, 18px) * .7)) saturate(160%);
+  border: 1px solid var(--stroke);
+  box-shadow: inset 0 1px 0 var(--glass-edge), 0 8px 22px rgba(0,0,0,.25);
+}
+body.no-glass .world-chip { backdrop-filter: none; background: var(--panel-solid); }
