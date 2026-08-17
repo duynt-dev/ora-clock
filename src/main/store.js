@@ -16,7 +16,6 @@ const DEFAULTS = {
   aurora: false,             // drifting colour blobs behind the glass
   background: { type: 'theme', value: '', blur: 0, dim: 0.35 }, // theme | gradient | image | youtube
   fontScale: 1,
-  uiScale: 1,
 
   // --- typography ---
   clockFont: 'fliqlo',       // id from src/renderer/js/fonts.js, or 'custom'

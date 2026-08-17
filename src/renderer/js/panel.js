@@ -10,6 +10,7 @@ import { CLOCK_FONTS, WEIGHTS, getFont } from './fonts.js';
 import { parseSpotifyUri } from './spotify.js';
 import { Stopwatch } from './tools.js';
 import { t, LANGUAGES, localeFor } from './i18n.js';
+import { dropdown, closeAny } from './dropdown.js';
 
 export const THEMES = [
   { id: 'obsidian', label: 'Obsidian', mode: 'dark', dots: ['#ffffff', '#6b6f7d', '#3b3e49'], bg: 'radial-gradient(120% 120% at 50% 0%, #14151a, #000 70%)' },
@@ -64,12 +65,8 @@ export function makeControls(app) {
     return row(label, sub, h('div.slider', {}, input, out));
   };
 
-  const select = (path, label, sub, options, opts = {}) => {
-    const sel = h('select.sel', { 'aria-label': label });
-    options.forEach(([v, text]) => sel.append(h('option', { value: v, selected: String(val(path)) === String(v) }, text)));
-    sel.onchange = () => put(path, sel.value, opts);
-    return row(label, sub, sel);
-  };
+  const select = (path, label, sub, options, opts = {}) =>
+    row(label, sub, dropdown(options, val(path), (v) => put(path, v, opts), { ariaLabel: label }));
 
   const text = (path, label, sub, { placeholder = '', list = null, onCommit } = {}) => {
     const input = h('input.txt', { type: 'text', placeholder, value: val(path) ?? '', list });
@@ -102,7 +99,7 @@ function tabClock(app, c) {
   const grid = h('div.face-grid', {}, ...FACES.map((f) =>
     h('button.face-card', {
       class: app.s.face === f.id ? 'active' : '',
-      onclick: () => { app.set({ face: f.id }); app.panel.render(); },
+      onclick: () => app.set({ face: f.id }, { smooth: true, rerender: true }),
     }, h('div.thumb', { html: f.thumb }), h('span', {}, f.label))));
 
   const dateLocale = app.s.locale || localeFor();
@@ -116,15 +113,15 @@ function tabClock(app, c) {
     c.group(t('Clock face'), grid),
 
     c.group(t('Display'), c.inset(
-      c.toggle('hour24', t('24-hour time'), t('Turn off for 12-hour AM/PM'), { rerender: true }),
-      !app.s.hour24 ? c.toggle('showAmPm', t('Show AM/PM')) : null,
-      c.toggle('showSeconds', t('Show seconds')),
-      c.toggle('showDate', t('Show date'), '', { rerender: true }),
+      c.toggle('hour24', t('24-hour time'), t('Turn off for 12-hour AM/PM'), { rerender: true, smooth: true }),
+      !app.s.hour24 ? c.toggle('showAmPm', t('Show AM/PM'), '', { smooth: true }) : null,
+      c.toggle('showSeconds', t('Show seconds'), '', { smooth: true }),
+      c.toggle('showDate', t('Show date'), '', { rerender: true, smooth: true }),
     )),
 
     c.group(t('Typeface'), c.inset(
       c.select('clockFont', t('Clock font'), getFont(app.s.clockFont).note,
-        CLOCK_FONTS.map((f) => [f.id, f.label]), { rerender: true }),
+        CLOCK_FONTS.map((f) => [f.id, f.label]), { rerender: true, smooth: true }),
       app.s.clockFont === 'custom'
         ? c.text('clockFontCustom', t('Custom font'), t('Type any font installed on this machine'),
           { placeholder: 'Helvetica Neue', list: 'system-fonts' })
@@ -157,7 +154,7 @@ function tabLook(app, c) {
     h('button.theme-swatch', {
       class: app.s.theme === theme.id ? 'active' : '',
       title: theme.label,
-      onclick: () => { app.set({ theme: theme.id }); app.panel.render(); },
+      onclick: () => app.set({ theme: theme.id }, { smooth: true, rerender: true }),
     },
     h('i', { style: { background: theme.bg } }),
     h('div.dots', {}, ...theme.dots.map((d) => h('b', { style: { background: d } }))),
@@ -166,7 +163,7 @@ function tabLook(app, c) {
   const custom = app.s.theme === 'custom' ? [
     c.group(t('Your colours'), c.inset(
       c.select('customTheme.mode', t('Appearance'), '',
-        [['dark', t('Dark')], ['light', t('Light')]], { rerender: true }),
+        [['dark', t('Dark')], ['light', t('Light')]], { rerender: true, smooth: true }),
       c.color('customTheme.accent', t('Accent')),
       c.color('customTheme.accent2', t('Secondary accent')),
       c.color('customTheme.fg', t('Text')),
@@ -200,22 +197,23 @@ function tabLook(app, c) {
     c.group(t('Themes'), grid),
     ...custom,
     c.group(t('Liquid glass'), c.inset(
-      c.toggle('glass', t('Glass effect'), t('Blurs and refracts what is behind the panels'), { rerender: true }),
-      c.toggle('accentGlow', t('Accent glow on edges')),
+      c.toggle('glass', t('Glass effect'), t('Blurs and refracts what is behind the panels'),
+        { rerender: true, smooth: true }),
+      c.toggle('accentGlow', t('Accent glow on edges'), '', { smooth: true }),
     )),
     c.group(t('Background'), c.inset(
       c.select('background.type', t('Background source'), '', [
         ['theme', t('From the theme')], ['gradient', t('Custom gradient')],
         ['image', t('Image from disk')], ['youtube', t('YouTube video')],
-      ], { rerender: true }),
+      ], { rerender: true, smooth: true }),
       ...bgExtras,
     ),
     bg.type === 'youtube' ? c.hint(t('Turn on "Video as wallpaper" in the Music tab and the playing video becomes the background.')) : null),
     c.more(c.inset(
       app.s.glass ? c.slider('glassStrength', t('Glass blur'), '', { min: 0, max: 40, step: 1, fmt: (v) => `${v}px` }) : null,
-      app.s.glass ? c.toggle('liquid', t('Liquid ripple'), t('Adds a moving distortion to the glass')) : null,
+      app.s.glass ? c.toggle('liquid', t('Liquid ripple'), t('Adds a moving distortion to the glass'), { smooth: true }) : null,
       app.supportsAcrylic ? c.toggle('acrylic', t('Window glass backdrop'), t('Use the Windows 11 acrylic material')) : null,
-      c.toggle('aurora', t('Drifting colour blobs')),
+      c.toggle('aurora', t('Drifting colour blobs'), '', { smooth: true }),
       c.slider('background.dim', t('Darken background'), '', { min: 0, max: 90, step: 5, scale: 100, fmt: pct }),
       c.slider('background.blur', t('Blur background'), '', { min: 0, max: 40, step: 1, fmt: (v) => `${v}px` }),
     )),
@@ -367,8 +365,12 @@ function tabTools(app, c) {
   const swDisplay = h('b', { style: { fontSize: '19px' } }, sw.display);
   app.panel.stopwatchNode = swDisplay;
 
-  const zoneSel = h('select.sel', { style: { maxWidth: '100%', flex: '1', minWidth: '0' } },
-    ...COMMON_ZONES.map(([tz, name]) => h('option', { value: tz }, `${t(name)} · ${tz}`)));
+  const zoneSel = dropdown(
+    COMMON_ZONES.map(([tz, name]) => [tz, `${t(name)} · ${tz}`]),
+    app.panel.zoneDraft || COMMON_ZONES[0][0],
+    (v) => { app.panel.zoneDraft = v; },
+    { ariaLabel: t('Time zone'), wide: true },
+  );
 
   return [
     c.group(t('Focus'), c.inset(
@@ -454,51 +456,51 @@ function tabSystem(app, c) {
     ['T', t('Next theme')], ['C', t('Next clock face')], ['Esc', t('Close panel / leave full screen')],
   ];
 
+  const nightRow = () => {
+    const from = h('input.txt', { type: 'time', value: app.s.nightDim.from });
+    const to = h('input.txt', { type: 'time', value: app.s.nightDim.to });
+    from.onchange = () => app.set({ nightDim: { from: from.value } });
+    to.onchange = () => app.set({ nightDim: { to: to.value } });
+    return h('div.row', {}, h('div.lbl', {}, h('b', {}, t('Between'))), h('div.btn-row', {}, from, to));
+  };
+
+  /* One card per topic instead of a long ladder of one-row groups:
+     everything about the window lives together, everything about
+     starting up and staying out of the way lives together. */
   return [
     c.group(t('General'), c.inset(
-      c.select('language', t('App language'), '', LANGUAGES, { rerender: true }),
-      c.slider('uiScale', t('Interface size'), '', { min: 80, max: 140, step: 5, scale: 100, fmt: pct }),
+      c.select('language', t('App language'), '', LANGUAGES, { rerender: true, smooth: true }),
+      c.toggle('launchAtLogin', t('Launch with Windows')),
+      c.toggle('startMinimizedToTray', t('Start hidden in the tray')),
     )),
 
     c.group(t('Window'), c.inset(
       c.toggle('alwaysOnTop', t('Keep on top')),
       c.toggle('autoHideUI', t('Auto-hide the controls'), t('Hides the dock when the mouse rests')),
       c.slider('opacity', t('Window opacity'), '', { min: 20, max: 100, step: 5, scale: 100, fmt: pct }),
+      c.toggle('hideOnBlur', t('Hide when it loses focus')),
+      c.toggle('clickThrough', t('Let clicks pass through'),
+        t('Turns the clock into an overlay. Use a hotkey to turn it back off.')),
     )),
 
-    c.group(t('Startup'), c.inset(
-      c.toggle('launchAtLogin', t('Launch with Windows')),
-      c.toggle('startMinimizedToTray', t('Start hidden in the tray')),
+    c.group(t('Night & screen care'), c.inset(
+      c.toggle('keepAwake', t('Keep the display awake')),
+      c.toggle('nightDim.enabled', t('Dim automatically at night'), '', { rerender: true }),
+      app.s.nightDim.enabled ? nightRow() : null,
+      app.s.nightDim.enabled ? c.slider('nightDim.opacity', t('Night brightness'), '',
+        { min: 15, max: 100, step: 5, scale: 100, fmt: pct }) : null,
     )),
 
-    c.more(
+    c.group(t('Keys'),
       c.inset(
-        c.toggle('clickThrough', t('Let clicks pass through'),
-          t('Turns the clock into an overlay. Use a hotkey to turn it back off.')),
-        c.toggle('hideOnBlur', t('Hide when it loses focus')),
-        c.toggle('keepAwake', t('Keep the display awake')),
-        c.toggle('nightDim.enabled', t('Dim automatically at night'), '', { rerender: true }),
-        app.s.nightDim.enabled ? h('div.row', {},
-          h('div.lbl', {}, h('b', {}, t('Between'))),
-          (() => {
-            const from = h('input.txt', { type: 'time', value: app.s.nightDim.from });
-            const to = h('input.txt', { type: 'time', value: app.s.nightDim.to });
-            from.onchange = () => app.set({ nightDim: { from: from.value } });
-            to.onchange = () => app.set({ nightDim: { to: to.value } });
-            return h('div.btn-row', {}, from, to);
-          })()) : null,
-        app.s.nightDim.enabled ? c.slider('nightDim.opacity', t('Night brightness'), '',
-          { min: 15, max: 100, step: 5, scale: 100, fmt: pct }) : null,
         c.toggle('hotkeys.enabled', t('Global hotkeys'), '', { rerender: true }),
         hk.enabled ? hotkeyRow('hotkeys.toggleWindow', t('Show / hide the clock')) : null,
         hk.enabled ? hotkeyRow('hotkeys.fullscreen', t('Full screen')) : null,
         hk.enabled ? hotkeyRow('hotkeys.playPause', t('Play / pause')) : null,
       ),
       hk.enabled ? c.hint(t('Use Electron syntax: CommandOrControl, Alt, Shift, Super + key. Leave empty to unbind.')) : null,
-    ),
-
-    c.group(t('Shortcuts'), h('div.inset', {},
-      ...keys.map(([k, d]) => h('div.kbd-row', {}, h('span', {}, d), h('kbd', {}, k))))),
+      c.more(h('div.inset', {},
+        ...keys.map(([k, d]) => h('div.kbd-row', {}, h('span', {}, d), h('kbd', {}, k)))))),
 
     c.group('Ora Clock', c.inset(
       h('div.row', {}, h('div.lbl', {}, h('b', {}, t('Version {v}', { v: info.version || '1.0.0' })),
@@ -561,6 +563,7 @@ export class Panel {
   }
 
   close() {
+    closeAny();
     document.body.classList.remove('panel-open');
     this.el.setAttribute('aria-hidden', 'true');
     this.app.syncDock();
@@ -573,6 +576,7 @@ export class Panel {
 
   render() {
     if (!this.isOpen) return;
+    closeAny();   // a portalled list would outlive the trigger it belongs to
     const c = makeControls(this.app);
     const def = TABS.find((tab) => tab.id === this.active) || TABS[0];
     const scroll = this.body.scrollTop;

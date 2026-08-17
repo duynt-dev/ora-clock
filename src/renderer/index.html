@@ -46,25 +46,25 @@
 <header id="titlebar">
   <div class="drag-region"></div>
 
-  <!-- macOS-style traffic lights: close · minimise · zoom -->
-  <div class="traffic no-drag">
-    <button class="light close" data-win="close" title="Hide to tray" aria-label="Hide to tray">
-      <svg viewBox="0 0 12 12"><path d="M3.6 3.6l4.8 4.8M8.4 3.6l-4.8 4.8"/></svg>
-    </button>
-    <button class="light min" data-win="minimize" title="Minimise" aria-label="Minimise">
-      <svg viewBox="0 0 12 12"><path d="M3 6h6"/></svg>
-    </button>
-    <button class="light zoom" data-win="maximize" title="Maximise" aria-label="Maximise">
-      <svg viewBox="0 0 12 12"><path d="M3.4 8.6V4.2h4.4M8.6 3.4v4.4H4.2"/></svg>
-    </button>
-  </div>
-
   <div class="title-actions no-drag">
     <button class="tb-btn" data-win="pin" title="Keep on top (Ctrl+T)">
       <svg viewBox="0 0 24 24"><path d="M14 3v6l3 3v2H13v6l-1 2-1-2v-6H7v-2l3-3V3z"/></svg>
     </button>
     <button class="tb-btn" data-win="fullscreen" title="Full screen (F11)">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </div>
+
+  <!-- traffic lights, right-aligned: minimise · zoom · close -->
+  <div class="traffic no-drag">
+    <button class="light min" data-win="minimize" title="Minimise" aria-label="Minimise">
+      <svg viewBox="0 0 12 12"><path d="M3 6h6"/></svg>
+    </button>
+    <button class="light zoom" data-win="maximize" title="Maximise" aria-label="Maximise">
+      <svg viewBox="0 0 12 12"><path d="M3.4 8.6V4.2h4.4M8.6 3.4v4.4H4.2"/></svg>
+    </button>
+    <button class="light close" data-win="close" title="Hide to tray" aria-label="Hide to tray">
+      <svg viewBox="0 0 12 12"><path d="M3.6 3.6l4.8 4.8M8.4 3.6l-4.8 4.8"/></svg>
     </button>
   </div>
 </header>

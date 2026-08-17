@@ -10,7 +10,7 @@ const DEFAULTS = {
   face: 'flip', theme: 'obsidian', glass: true, glassStrength: 18, liquid: false,
   acrylic: false, accentGlow: true, aurora: false,
   background: { type: 'theme', value: '', blur: 0, dim: 0.35 },
-  fontScale: 1, uiScale: 1,
+  fontScale: 1,
   clockFont: 'fliqlo', clockFontCustom: '', clockWeight: 0,
   customTheme: {
     mode: 'dark', accent: '#7ad6ff', accent2: '#9b7bff', bg1: '#1e2233', bg2: '#07080f',

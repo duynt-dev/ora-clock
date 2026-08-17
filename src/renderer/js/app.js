@@ -146,7 +146,27 @@ class App {
 
   /* ------------------------------ settings ------------------------------ */
 
-  set(patch, { rerender = false } = {}) {
+  /**
+   * Cross-fades the page around `fn` so a look change lands as a dissolve
+   * rather than a jump cut. Falls back to a plain call where the View
+   * Transition API is missing or motion is turned down.
+   */
+  transition(fn) {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!document.startViewTransition || reduce || this._inTransition) return fn();
+    this._inTransition = true;
+    try {
+      const vt = document.startViewTransition(() => { fn(); });
+      vt.finished.catch(() => {}).finally(() => { this._inTransition = false; });
+      return vt;
+    } catch {
+      this._inTransition = false;
+      return fn();
+    }
+  }
+
+  set(patch, { rerender = false, smooth = false } = {}) {
+    if (smooth) return this.transition(() => this.set(patch, { rerender }));
     const prevFace = this.s.face;
     const prevLang = this.s.language;
     this.s = deepMerge(this.s, patch);
@@ -194,7 +214,12 @@ class App {
       pin: t('Keep on top'), fullscreen: t('Full screen'), minimize: t('Minimise'),
       maximize: t('Maximise'), close: t('Hide to tray'),
     };
-    $$('.tb-btn').forEach((b) => { b.title = titles[b.dataset.win] || b.title; });
+    $$('[data-win]').forEach((b) => {
+      const label = titles[b.dataset.win];
+      if (!label) return;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+    });
 
     const player = { prev: t('Previous track'), toggle: t('Play / pause'), next: t('Next track') };
     $$('[data-pl]').forEach((b) => { b.title = player[b.dataset.pl] || b.title; });
@@ -225,7 +250,6 @@ class App {
     body.classList.toggle('no-aurora', s.aurora === false);
 
     root.style.setProperty('--glass-blur', `${s.glassStrength}px`);
-    root.style.setProperty('--ui', s.uiScale);   // scales the chrome, not the clock
 
     this.applyBackground();
     this.resize();
@@ -580,7 +604,8 @@ class App {
 
     $$('#dock button').forEach((b) => { b.onclick = () => this.panel.toggle(b.dataset.dock); });
 
-    $$('.tb-btn').forEach((b) => {
+    // covers both the titlebar buttons and the traffic lights
+    $$('[data-win]').forEach((b) => {
       b.onclick = async () => {
         const a = b.dataset.win;
         if (a === 'pin') { this.set({ alwaysOnTop: !this.s.alwaysOnTop }); this.syncDock(); return; }
@@ -651,10 +676,12 @@ class App {
 
   cycle(key, list, after) {
     const i = (list.indexOf(this.s[key]) + 1) % list.length;
-    this.set({ [key]: list[i] });
-    after?.();
+    this.transition(() => {
+      this.set({ [key]: list[i] });
+      after?.();
+      if (this.panel.isOpen) this.panel.render();
+    });
     toast(list[i]);
-    if (this.panel.isOpen) this.panel.render();
   }
 }
 
