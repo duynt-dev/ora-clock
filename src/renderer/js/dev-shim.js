@@ -8,7 +8,7 @@
 const DEFAULTS = {
   language: 'en',
   face: 'flip', theme: 'obsidian', glass: true, glassStrength: 18, liquid: false,
-  acrylic: false, accentGlow: true, aurora: false,
+  accentGlow: true, aurora: false,
   background: { type: 'theme', value: '', blur: 0, dim: 0.35 },
   fontScale: 1,
   clockFont: 'fliqlo', clockFontCustom: '', clockWeight: 0,
@@ -60,7 +60,7 @@ window.api = {
       return { fullscreen: !!document.fullscreenElement, maximized: false };
     },
     setSize: async () => null,
-    state: async () => ({ fullscreen: false, maximized: false, supportsAcrylic: false }),
+    state: async () => ({ fullscreen: false, maximized: false }),
     onFullscreen: noop, onMaximized: noop, onFocus: noop,
   },
   app: {

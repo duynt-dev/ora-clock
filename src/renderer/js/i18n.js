@@ -13,7 +13,7 @@ export const LANGUAGES = [
 ];
 
 const vi = {
-  /* tabs + dock */
+  /* tabs */
   'Clock': 'Đồng hồ',
   'Look': 'Giao diện',
   'Music': 'Nhạc',
@@ -120,8 +120,6 @@ const vi = {
   'Glass blur': 'Độ mờ kính',
   'Liquid ripple': 'Gợn sóng chất lỏng',
   'Adds a moving distortion to the glass (heavier on the GPU)': 'Thêm biến dạng động cho lớp kính (tốn GPU hơn)',
-  'Window glass backdrop': 'Nền kính của cửa sổ',
-  'Use the Windows 11 acrylic material': 'Dùng hiệu ứng Acrylic của Windows 11',
   'Accent glow on edges': 'Viền phát sáng theo màu nhấn',
   'Drifting colour blobs': 'Đốm màu chuyển động nền',
   'Background': 'Hình nền',
@@ -218,7 +216,6 @@ const vi = {
     'Biến đồng hồ thành lớp phủ không chặn thao tác. Dùng phím tắt để tắt lại.',
   'Window opacity': 'Độ trong suốt cửa sổ',
   'Auto-hide the controls': 'Tự ẩn thanh điều khiển',
-  'Hides the dock and window buttons when the mouse rests': 'Ẩn dock và nút cửa sổ khi không di chuột',
   'Hide when it loses focus': 'Ẩn khi mất tiêu điểm',
   'Keep the display awake': 'Ngăn màn hình tắt',
   'Handy when it sits on a desk': 'Hữu ích khi dùng như đồng hồ để bàn',
@@ -237,7 +234,7 @@ const vi = {
   'Global hotkeys': 'Phím tắt toàn cục',
   'Blurs and refracts what is behind the panels': 'Làm mờ và khúc xạ nền phía sau các panel',
   'Adds a moving distortion to the glass': 'Thêm biến dạng động cho lớp kính',
-  'Hides the dock when the mouse rests': 'Ẩn dock khi không di chuột',
+  'Hides the window buttons when the mouse rests': 'Ẩn các nút cửa sổ khi không di chuột',
   'Turns the clock into an overlay. Use a hotkey to turn it back off.':
     'Biến đồng hồ thành lớp phủ. Dùng phím tắt để tắt lại.',
   'Show / hide the clock': 'Hiện / ẩn đồng hồ',
@@ -263,8 +260,8 @@ const vi = {
   'Quit': 'Thoát',
 
   /* runtime messages */
-  'Welcome! Move the mouse to the bottom to open the control dock.':
-    'Chào mừng! Di chuột xuống dưới để mở bảng điều khiển.',
+  'Welcome! The gear in the top right opens the settings.':
+    'Chào mừng! Nhấn biểu tượng bánh răng ở góc trên bên phải để mở cài đặt.',
   'Settings reset': 'Đã đặt lại cài đặt',
   'Alarm added': 'Đã thêm báo thức',
   'Spotify disconnected': 'Đã ngắt kết nối Spotify',

@@ -1,12 +1,12 @@
 /* ---------------------------------------------------------------
-   Ora Clock — base layout, background layers, dock, player bar
+   Ora Clock — base layout, background layers, titlebar, player bar
    --------------------------------------------------------------- */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --dock-h: 62px;
   --radius: 22px;
+  --win-radius: 12px;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
              "Segoe UI", Inter, system-ui, "Helvetica Neue", Arial, sans-serif;
@@ -31,6 +31,10 @@ body {
 
 body.hide-cursor, body.hide-cursor * { cursor: none; }
 
+/* The window itself is transparent, so the rounded corners are drawn here.
+   Maximised and full screen fill the display and go square again. */
+body.squared { --win-radius: 0px; }
+
 .svg-defs { position: fixed; width: 0; height: 0; pointer-events: none; }
 .hidden { display: none !important; }
 
@@ -41,7 +45,17 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 
 /* ------------------------------ background ------------------------------ */
 
-#bg-layer { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+#bg-layer {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  border-radius: var(--win-radius);
+  transition: border-radius .2s var(--ease);
+}
+/* a hairline keeps the app readable against a light desktop */
+#bg-layer::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--stroke);
+  pointer-events: none;
+}
 
 #bg-media {
   position: absolute; inset: -4%;
@@ -92,16 +106,23 @@ body.no-aurora #bg-aurora { display: none; }
 
 #titlebar {
   position: fixed; inset: 0 0 auto 0; height: 42px; z-index: 40;
-  display: flex; align-items: center; justify-content: flex-end; gap: 6px;
-  padding-right: 13px;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 8px;
 }
 .drag-region { position: absolute; inset: 0; -webkit-app-region: drag; }
 .no-drag { -webkit-app-region: no-drag; }
-.title-actions {
-  display: flex; gap: 4px; position: relative; z-index: 2;
+.title-actions, .win-actions {
+  display: flex; align-items: center; gap: 2px; position: relative; z-index: 2;
   opacity: 0; transition: opacity .25s var(--ease);
 }
-body.ui-visible .title-actions { opacity: 1; }
+body.ui-visible .title-actions,
+body.ui-visible .win-actions { opacity: 1; }
+
+/* hairline between "what the app does" and "what the window does" */
+.tb-sep {
+  width: 1px; height: 14px; margin: 0 6px; flex: none;
+  background: var(--stroke);
+}
 
 .tb-btn {
   width: 30px; height: 26px; border: 0; border-radius: 8px;
@@ -113,41 +134,21 @@ body.ui-visible .title-actions { opacity: 1; }
 .tb-btn:hover { background: var(--hover); color: var(--fg); }
 .tb-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tb-btn.active { color: var(--accent); background: var(--hover); }
-
-/* macOS-style traffic lights, parked on the right of the titlebar */
-.traffic {
-  position: relative; z-index: 2;
-  display: flex; align-items: center; gap: 8px;
-  opacity: 0; transition: opacity .25s var(--ease);
-  -webkit-app-region: no-drag;
-}
-body.ui-visible .traffic { opacity: 1; }
-.traffic .light {
-  width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%;
-  display: grid; place-items: center; cursor: pointer;
-  box-shadow: inset 0 0 0 .5px rgba(0,0,0,.2);
-  transition: filter .15s, transform .15s var(--ease);
-}
-.traffic .light:hover { filter: brightness(1.08); }
-.traffic .light svg {
-  width: 9px; height: 9px; stroke: rgba(0,0,0,.62); stroke-width: 1.5;
-  opacity: 0; transition: opacity .14s;
-}
-.traffic:hover .light svg { opacity: 1; }
-.traffic .light:active { filter: brightness(.82); }
-.traffic .light:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.traffic .close { background: #ff5f57; }
-.traffic .min   { background: #febc2e; }
-.traffic .zoom  { background: #28c840; }
-body.unfocused .traffic .light { background: #55555a; box-shadow: none; }
+.tb-btn:active { transform: scale(.92); }
+.tb-btn.close:hover { background: #e5484d; color: #fff; }
+.tb-btn.close:focus-visible { outline-color: #e5484d; }
+/* an unfocused window should read as inactive, not as a lit-up toolbar */
+body.unfocused .tb-btn { color: color-mix(in srgb, var(--fg-dim) 55%, transparent); }
 
 /* ------------------------------ stage ------------------------------ */
 
 #stage {
   position: relative; z-index: 10;
   height: 100%; display: grid; place-items: center;
-  padding: 48px 24px calc(var(--dock-h) + 26px);
+  padding: 48px 24px 30px;
 }
+
+body.has-player #stage { padding-bottom: 100px; }
 
 #clock-wrap {
   display: flex; flex-direction: column; align-items: center; gap: 18px;
@@ -178,38 +179,13 @@ body.unfocused .traffic .light { background: #55555a; box-shadow: none; }
 .world-chip span { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-dim); }
 .world-chip i { font-style: normal; font-size: 9px; color: var(--accent); letter-spacing: .1em; }
 
-/* ------------------------------ dock ------------------------------ */
-
-#dock {
-  position: fixed; z-index: 45; left: 50%; bottom: 18px;
-  transform: translateX(-50%) translateY(var(--dock-y, 0));
-  display: flex; gap: 4px; padding: 7px;
-  border-radius: 20px;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s var(--ease), transform .3s var(--ease);
-}
-body.ui-visible #dock { opacity: 1; pointer-events: auto; }
-
-#dock button {
-  border: 0; background: transparent; color: var(--fg-dim);
-  padding: 8px 14px; border-radius: 14px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  font-size: 10.5px; letter-spacing: .04em; font-weight: 500;
-  transition: background .18s, color .18s, transform .2s var(--ease);
-}
-#dock button:hover { background: var(--hover); color: var(--fg); transform: translateY(-2px); }
-#dock button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-#dock button:active { transform: translateY(0) scale(.96); }
-#dock button.active { color: var(--accent); background: var(--hover); }
-#dock svg { width: 19px; height: 19px; }
-
 /* ------------------------------ player bar ------------------------------ */
 
-/* Stacked above the dock at every size: the dock is centred and grows with
-   its labels, so a bottom-left bar collides with it on most window widths. */
+/* Centred at the bottom; the stage gives it room via body.has-player so it
+   never lands on top of the clock. */
 #player-bar {
   position: fixed; z-index: 44;
-  left: 50%; bottom: calc(var(--dock-h) + 26px);
+  left: 50%; bottom: 18px;
   width: min(420px, calc(100vw - 28px));
   display: flex; align-items: center; gap: 12px;
   padding: 10px; border-radius: 18px;
@@ -321,6 +297,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
 
 #scrim {
   position: fixed; inset: 0; z-index: 48;
+  border-radius: var(--win-radius);
   background: rgba(0,0,0,.28); backdrop-filter: blur(2px);
   opacity: 0; pointer-events: none; transition: opacity .3s var(--ease);
 }
@@ -356,16 +333,14 @@ body.panel-open #scrim { opacity: 1; pointer-events: auto; }
 /* ------------------------------ responsive ------------------------------ */
 
 /* below this the centred player bar reaches across to the focus HUD */
-@media (max-width: 900px) {
-  #focus-hud { bottom: calc(var(--dock-h) + 112px); }
+@media (max-width: 960px) {
+  body.has-player #focus-hud { bottom: 104px; }
 }
 
 @media (max-width: 620px) {
-  #dock button span { display: none; }
-  #dock button { padding: 9px 12px; }
-  #dock { bottom: 12px; }
-  #stage { padding: 44px 14px calc(var(--dock-h) + 18px); }
-  #focus-hud { right: 12px; bottom: calc(var(--dock-h) + 112px); width: 200px; }
+  #stage { padding: 44px 14px 22px; }
+  #focus-hud { right: 12px; width: 200px; }
+  body.has-player #focus-hud { bottom: 104px; }
   .world-chip { min-width: 78px; padding: 6px 11px; }
 }
 
@@ -377,10 +352,7 @@ body.panel-open #scrim { opacity: 1; pointer-events: auto; }
 
 /* short windows: give the clock the vertical room back */
 @media (max-height: 460px) {
-  #stage { padding: 36px 14px calc(var(--dock-h) + 12px); }
-  #dock { bottom: 10px; padding: 5px; }
-  #dock button { padding: 7px 10px; }
-  #dock button span { display: none; }
+  #stage { padding: 36px 14px 16px; }
   #titlebar { height: 34px; }
 }
 

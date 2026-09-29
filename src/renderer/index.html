@@ -47,24 +47,27 @@
   <div class="drag-region"></div>
 
   <div class="title-actions no-drag">
+    <button class="tb-btn" id="settings-btn" title="Settings (S)" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 008.9 19a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1A1.7 1.7 0 004.6 8.9a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+    </button>
     <button class="tb-btn" data-win="pin" title="Keep on top (Ctrl+T)">
       <svg viewBox="0 0 24 24"><path d="M14 3v6l3 3v2H13v6l-1 2-1-2v-6H7v-2l3-3V3z"/></svg>
     </button>
     <button class="tb-btn" data-win="fullscreen" title="Full screen (F11)">
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
     </button>
+    <i class="tb-sep"></i>
   </div>
 
-  <!-- traffic lights, right-aligned: minimise · zoom · close -->
-  <div class="traffic no-drag">
-    <button class="light min" data-win="minimize" title="Minimise" aria-label="Minimise">
-      <svg viewBox="0 0 12 12"><path d="M3 6h6"/></svg>
+  <div class="win-actions no-drag">
+    <button class="tb-btn" data-win="minimize" title="Minimise" aria-label="Minimise">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
     </button>
-    <button class="light zoom" data-win="maximize" title="Maximise" aria-label="Maximise">
-      <svg viewBox="0 0 12 12"><path d="M3.4 8.6V4.2h4.4M8.6 3.4v4.4H4.2"/></svg>
+    <button class="tb-btn" data-win="maximize" title="Maximise" aria-label="Maximise">
+      <svg viewBox="0 0 24 24"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5"/></svg>
     </button>
-    <button class="light close" data-win="close" title="Hide to tray" aria-label="Hide to tray">
-      <svg viewBox="0 0 12 12"><path d="M3.6 3.6l4.8 4.8M8.4 3.6l-4.8 4.8"/></svg>
+    <button class="tb-btn close" data-win="close" title="Hide to tray" aria-label="Hide to tray">
+      <svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
     </button>
   </div>
 </header>
@@ -105,14 +108,6 @@
     </div>
   </div>
 </div>
-
-<nav id="dock" class="glass">
-  <button data-dock="faces" title="Clock face"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Face</span></button>
-  <button data-dock="themes" title="Theme"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18 3 3 0 000-6 3 3 0 013-3h2a4 4 0 004-4 5 5 0 00-9-5z"/></svg><span>Theme</span></button>
-  <button data-dock="music" title="Music"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg><span>Music</span></button>
-  <button data-dock="tools" title="Tools"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Tools</span></button>
-  <button data-dock="settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 008.9 19a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1A1.7 1.7 0 004.6 8.9a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span>Settings</span></button>
-</nav>
 
 <aside id="panel" class="glass" aria-hidden="true">
   <div class="panel-head">

@@ -31,7 +31,7 @@ class App {
     setLanguage(this.s.language);
     this.appInfo = await window.api.app.info();
     const winState = await window.api.window.state();
-    this.supportsAcrylic = winState.supportsAcrylic;
+    document.body.classList.toggle('squared', winState.maximized || winState.fullscreen);
 
     this.stopwatch = new Stopwatch();
     this.focus = new FocusTimer(this.s, () => this.renderFocus());
@@ -62,7 +62,7 @@ class App {
 
     if (this.s.firstRun) {
       this.set({ firstRun: false });
-      setTimeout(() => toast(t('Welcome! Move the mouse to the bottom to open the control dock.'), '', 5200), 900);
+      setTimeout(() => toast(t('Welcome! The gear in the top right opens the settings.'), '', 5200), 900);
     }
     document.body.classList.add('ui-visible');
     this.scheduleHideUI();
@@ -100,6 +100,18 @@ class App {
   /** Walks a few window sizes and reports anything that overflows or collides. */
   async responsiveTest() {
     const sizes = [[1180, 740], [980, 620], [760, 560], [620, 480], [480, 400], [380, 300]];
+    // the second pass is the worst case a user can build from the settings panel
+    const passes = [
+      ['plain', {}],
+      ['loaded', {
+        fontScale: 2, showSeconds: true, showDate: true,
+        worldClocks: [{ tz: 'Asia/Tokyo', label: 'Tokyo' }, { tz: 'Europe/London', label: 'London' }],
+      }],
+    ];
+    const before = {
+      fontScale: this.s.fontScale, showSeconds: this.s.showSeconds,
+      showDate: this.s.showDate, worldClocks: this.s.worldClocks,
+    };
     const restore = [window.innerWidth, window.innerHeight];
     const problems = [];
     const frame = () => new Promise((r) => setTimeout(r, 220));
@@ -108,40 +120,47 @@ class App {
     this.panel.open('faces');
     $('#player-bar').classList.remove('hidden');
     this.focus.countdown(5);
+    await new Promise((r) => setTimeout(r, 560));   // let the panel finish sliding in
 
-    for (const [w, h] of sizes) {
-      await window.api.window.setSize(w, h);
+    for (const [pass, patch] of passes) {
+      this.set(patch);
       await frame();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const fits = (el, name) => {
-        const r = el.getBoundingClientRect();
-        if (r.width === 0) return null;
-        if (r.right > vw + 1 || r.left < -1 || r.bottom > vh + 1 || r.top < -1) {
-          problems.push(`${w}x${h} ${name} outside viewport (${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)})`);
-        }
-        return r;
-      };
-      if (document.documentElement.scrollWidth > vw + 1) problems.push(`${w}x${h} horizontal overflow`);
-      fits($('#dock'), 'dock');
-      fits($('#panel'), 'panel');
-      const bar = fits($('#player-bar'), 'player bar');
-      const hud = fits($('#focus-hud'), 'focus HUD');
-      const clock = $('#clock-wrap').getBoundingClientRect();
-      if (clock.right > vw + 1 || clock.bottom > vh + 1) problems.push(`${w}x${h} clock overflows`);
-      const dock = $('#dock').getBoundingClientRect();
-      if (clock.bottom > dock.top + 2) problems.push(`${w}x${h} clock overlaps dock`);
-      const hits = (a, b) => a && b && a.width && b.width
-        && a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
-      if (hits(bar, dock)) problems.push(`${w}x${h} player bar overlaps dock`);
-      if (hits(hud, bar)) problems.push(`${w}x${h} focus HUD overlaps player bar`);
-      if (hits(hud, dock)) problems.push(`${w}x${h} focus HUD overlaps dock`);
+      for (const [w, h] of sizes) {
+        await window.api.window.setSize(w, h);
+        await frame();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const where = `${pass} ${w}x${h}`;
+        const fits = (el, name) => {
+          const r = el.getBoundingClientRect();
+          if (r.width === 0) return null;
+          if (r.right > vw + 1 || r.left < -1 || r.bottom > vh + 1 || r.top < -1) {
+            problems.push(`${where} ${name} outside viewport (${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)})`);
+          }
+          return r;
+        };
+        if (document.documentElement.scrollWidth > vw + 1) problems.push(`${where} horizontal overflow`);
+        fits($('#titlebar'), 'titlebar');
+        fits($('#panel'), 'panel');
+        const bar = fits($('#player-bar'), 'player bar');
+        const hud = fits($('#focus-hud'), 'focus HUD');
+        fits($('#clock-wrap'), 'clock');
+        const clock = $('#clock-wrap').getBoundingClientRect();
+        const hits = (a, b) => a && b && a.width && b.width
+          && a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2;
+        if (hits(clock, bar)) problems.push(`${where} clock overlaps player bar`);
+        if (hits(hud, bar)) problems.push(`${where} focus HUD overlaps player bar`);
+      }
     }
+
+    this.set(before);
     this.focus.stop();
     this.panel.close();
     this.renderPlayerBarVisibility();
     await window.api.window.setSize(restore[0], restore[1]);
-    console.log(`[responsive] ${problems.length ? `FAIL — ${problems.join(' | ')}` : `ok — ${sizes.length} sizes`}`);
+    console.log(`[responsive] ${problems.length
+      ? `FAIL — ${problems.join(' | ')}`
+      : `ok — ${sizes.length} sizes x ${passes.length} passes`}`);
   }
 
   /* ------------------------------ settings ------------------------------ */
@@ -180,6 +199,7 @@ class App {
     this.alarms.settings = this.s;
     window.api.settings.set(patch);
     this.apply();
+    this.refitSoon();
     if (this.s.face !== prevFace || langChanged) this.mountFace();
     if (rerender) this.panel.render();
     return this.s;
@@ -199,16 +219,9 @@ class App {
 
   /** Labels that live in index.html rather than in a render function. */
   applyStaticLabels() {
-    const dock = {
-      faces: t('Face'), themes: t('Theme'), music: t('Music'),
-      tools: t('Tools'), settings: t('Settings'),
-    };
-    $$('#dock button').forEach((b) => {
-      const label = dock[b.dataset.dock];
-      if (!label) return;
-      b.querySelector('span').textContent = label;
-      b.title = label;
-    });
+    const settingsBtn = $('#settings-btn');
+    settingsBtn.title = `${t('Settings')} (S)`;
+    settingsBtn.setAttribute('aria-label', t('Settings'));
 
     const titles = {
       pin: t('Keep on top'), fullscreen: t('Full screen'), minimize: t('Minimise'),
@@ -252,8 +265,8 @@ class App {
     root.style.setProperty('--glass-blur', `${s.glassStrength}px`);
 
     this.applyBackground();
-    this.resize();
     this.renderPlayerBarVisibility();
+    this.resize();
 
     // liquid layers are per-panel children, added lazily
     $$('.glass').forEach((g) => {
@@ -353,16 +366,30 @@ class App {
     const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const extra = (this.s.showDate ? 42 : 0) + ((this.s.worldClocks || []).length ? 94 : 0);
-    const availW = Math.max(60, (this.stage.clientWidth - padX) * 0.96);
-    const availH = Math.max(60, (this.stage.clientHeight - padY - extra) * 0.98);
+    const boxW = Math.max(60, this.stage.clientWidth - padX);
+    const boxH = Math.max(60, this.stage.clientHeight - padY - extra);
 
     root.style.setProperty('--clock-size', `${REF_SIZE}px`);
     const r = this.face.el.getBoundingClientRect();
     const w0 = Math.max(1, r.width);
     const h0 = Math.max(1, r.height);
 
-    const size = clamp(REF_SIZE * Math.min(availW / w0, availH / h0) * (this.s.fontScale || 1), 14, 620);
+    // "Clock size" scales the comfortable fit, but never past the box itself —
+    // otherwise 150% simply clips the face off the side of a narrow window
+    const comfy = Math.min((boxW * 0.96) / w0, (boxH * 0.98) / h0);
+    const hard = Math.min(boxW / w0, boxH / h0);
+    const size = clamp(REF_SIZE * Math.min(comfy * (this.s.fontScale || 1), hard), 14, 620);
     root.style.setProperty('--clock-size', `${size}px`);
+  }
+
+  /** Re-fits once the face has redrawn — seconds, date and fonts all change its width. */
+  refitSoon() {
+    if (!this.face) return;
+    cancelAnimationFrame(this._refit);
+    this._refit = requestAnimationFrame(() => {
+      this.render(true);      // let the face rebuild before it is measured
+      this.resize();
+    });
   }
 
   /* ------------------------------- loops ------------------------------- */
@@ -497,7 +524,18 @@ class App {
     this.panel.render();
   }
 
-  showPlayerBar() { $('#player-bar').classList.remove('hidden'); }
+  showPlayerBar() {
+    $('#player-bar').classList.remove('hidden');
+    this.syncPlayerSpace();
+  }
+
+  /** The bar floats over the stage, so the clock has to give up the room. */
+  syncPlayerSpace() {
+    const shown = !$('#player-bar').classList.contains('hidden');
+    if (shown === document.body.classList.contains('has-player')) return;
+    document.body.classList.toggle('has-player', shown);
+    this.resize();
+  }
 
   renderPlayerBarVisibility() {
     const bar = $('#player-bar');
@@ -514,6 +552,7 @@ class App {
       this.youtube.loop = this.s.youtube.loop;
       this.youtube.setVolume?.(this.s.youtube.volume);
     }
+    this.syncPlayerSpace();
   }
 
   renderPlayer() {
@@ -560,9 +599,8 @@ class App {
 
   /* --------------------------------- UI --------------------------------- */
 
-  syncDock() {
-    const open = this.panel.isOpen;
-    $$('#dock button').forEach((b) => b.classList.toggle('active', open && b.dataset.dock === this.panel.active));
+  syncChrome() {
+    $('#settings-btn').classList.toggle('active', this.panel.isOpen);
     $('[data-win="pin"]').classList.toggle('active', !!this.s.alwaysOnTop);
   }
 
@@ -586,8 +624,10 @@ class App {
     document.addEventListener('mousemove', () => this.showUI());
     document.addEventListener('mousedown', () => this.showUI());
     window.addEventListener('resize', () => this.resize());
+    // a late-loading clock font changes the metrics the fit was measured from
+    document.fonts?.ready.then(() => this.refitSoon()).catch(() => {});
 
-    ['#dock', '#panel', '#titlebar', '#player-bar', '#focus-hud'].forEach((sel) => {
+    ['#panel', '#titlebar', '#player-bar', '#focus-hud'].forEach((sel) => {
       const node = $(sel);
       node.addEventListener('mouseenter', () => { this.hoverUI = true; });
       node.addEventListener('mouseleave', () => { this.hoverUI = false; });
@@ -602,13 +642,13 @@ class App {
       g.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
     });
 
-    $$('#dock button').forEach((b) => { b.onclick = () => this.panel.toggle(b.dataset.dock); });
+    $('#settings-btn').onclick = () => this.panel.toggle();
 
-    // covers both the titlebar buttons and the traffic lights
+    // every titlebar button, app actions and window controls alike
     $$('[data-win]').forEach((b) => {
       b.onclick = async () => {
         const a = b.dataset.win;
-        if (a === 'pin') { this.set({ alwaysOnTop: !this.s.alwaysOnTop }); this.syncDock(); return; }
+        if (a === 'pin') { this.set({ alwaysOnTop: !this.s.alwaysOnTop }); this.syncChrome(); return; }
         await window.api.window.action(a);
       };
     });
@@ -641,7 +681,12 @@ class App {
     });
 
     window.api.app.onOpenSettings(() => this.panel.open('faces'));
-    window.api.window.onFullscreen((v) => { this.isFullscreen = v; this.showUI(); });
+    window.api.window.onFullscreen((v) => {
+      this.isFullscreen = v;
+      document.body.classList.toggle('squared', v);
+      this.showUI();
+    });
+    window.api.window.onMaximized?.((v) => document.body.classList.toggle('squared', v));
     window.api.window.onFocus((v) => document.body.classList.toggle('unfocused', !v));
     window.api.app.onHotkey((name) => {
       const p = this.activePlayer;
@@ -669,7 +714,7 @@ class App {
     if (k === ' ') { e.preventDefault(); this.activePlayer?.toggle(); return; }
     if (k === 'f' || e.key === 'F11') { window.api.window.action('fullscreen'); return; }
     if (k === 's') { this.panel.toggle(); return; }
-    if (k === 't' && (e.ctrlKey || e.metaKey)) { this.set({ alwaysOnTop: !this.s.alwaysOnTop }); this.syncDock(); return; }
+    if (k === 't' && (e.ctrlKey || e.metaKey)) { this.set({ alwaysOnTop: !this.s.alwaysOnTop }); this.syncChrome(); return; }
     if (k === 't') { this.cycle('theme', THEMES.map((t) => t.id)); return; }
     if (k === 'c') { this.cycle('face', FACES.map((f) => f.id), () => this.mountFace()); return; }
   }

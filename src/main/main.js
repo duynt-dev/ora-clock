@@ -2,15 +2,12 @@
 const path = require('path');
 const {
   app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut,
-  shell, nativeImage, dialog, powerSaveBlocker, nativeTheme,
+  shell, nativeImage, dialog, powerSaveBlocker, nativeTheme, session,
 } = require('electron');
-const os = require('os');
 const { Store } = require('./store');
 const { Spotify } = require('./spotify');
 const { RendererServer } = require('./server');
 const { listFonts } = require('./fonts');
-
-const isWin11 = process.platform === 'win32' && Number(os.release().split('.')[2]) >= 22000;
 
 let win = null;
 let tray = null;
@@ -26,6 +23,24 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', () => showWindow());
 }
 
+/**
+ * The YouTube embed fires ad + conversion beacons at doubleclick/pagead. They
+ * are cross-origin, fail CORS, and log a wall of errors; nothing about
+ * playback depends on them, so they never leave the app.
+ */
+const BEACON_URLS = [
+  '*://*.doubleclick.net/*',
+  '*://*.googleadservices.com/*',
+  '*://*.googlesyndication.com/*',
+  '*://*.youtube.com/pagead/*',
+  '*://*.youtube-nocookie.com/pagead/*',
+  '*://*.youtube.com/ptracking*',
+];
+
+function blockPlayerBeacons() {
+  session.defaultSession.webRequest.onBeforeRequest({ urls: BEACON_URLS }, (_details, cb) => cb({ cancel: true }));
+}
+
 function createWindow() {
   const bounds = store.get('windowBounds') || { width: 1000, height: 620 };
 
@@ -35,9 +50,11 @@ function createWindow() {
     minHeight: 260,
     show: false,
     frame: false,
+    // transparent so the page can draw its own rounded corners: a frameless
+    // window is a WS_POPUP, which DWM leaves square on Windows 11
+    transparent: true,
     titleBarStyle: 'hidden',
     backgroundColor: '#00000000',
-    ...(isWin11 && store.get('acrylic') ? { backgroundMaterial: 'acrylic' } : {}),
     ...(process.platform === 'darwin' ? { vibrancy: 'under-window', visualEffectState: 'active' } : {}),
     icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
     webPreferences: {
@@ -55,10 +72,13 @@ function createWindow() {
   win.loadURL(`${server.origin}/index.html${process.env.LUMINA_SELFTEST ? '?selftest=1' : ''}`);
 
   if (process.env.LUMINA_DEBUG) {
+    // third-party frames (the YouTube embed) log plenty that is not ours
+    const noise = /web-share|doubleclick|pagead|googleads|ERR_BLOCKED_BY_CLIENT|Access to (fetch|XMLHttpRequest)/i;
     // the signature changed across Electron versions — accept both shapes
     win.webContents.on('console-message', (a, _level, message, line) => {
       const text = typeof a === 'object' && a?.message ? a.message : message;
       const at = typeof a === 'object' && a?.lineNumber ? a.lineNumber : line;
+      if (noise.test(text)) return;
       console.log(`[renderer:${at}] ${text}`);
     });
   }
@@ -119,9 +139,6 @@ function applyWindowSettings() {
   win.setAlwaysOnTop(!!s.alwaysOnTop, 'floating');
   win.setOpacity(Number(s.opacity) || 1);
   win.setIgnoreMouseEvents(!!s.clickThrough, { forward: true });
-  if (isWin11) {
-    try { win.setBackgroundMaterial(s.acrylic ? 'acrylic' : 'none'); } catch { /* older Electron */ }
-  }
   if (process.platform !== 'linux') app.setLoginItemSettings({ openAtLogin: !!s.launchAtLogin });
 
   if (s.keepAwake && blockerId === null) {
@@ -227,7 +244,6 @@ function registerIpc() {
   ipcMain.handle('window:state', () => ({
     fullscreen: win?.isFullScreen() ?? false,
     maximized: win?.isMaximized() ?? false,
-    supportsAcrylic: isWin11,
   }));
 
   ipcMain.handle('app:open-external', (_e, url) => {
@@ -289,6 +305,7 @@ app.whenReady().then(async () => {
   spotify = new Spotify(store);
   server = new RendererServer(path.join(__dirname, '..', 'renderer'));
   await server.listen();
+  blockPlayerBeacons();
   registerIpc();
   createWindow();
   createTray();

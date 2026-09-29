@@ -212,7 +212,6 @@ function tabLook(app, c) {
     c.more(c.inset(
       app.s.glass ? c.slider('glassStrength', t('Glass blur'), '', { min: 0, max: 40, step: 1, fmt: (v) => `${v}px` }) : null,
       app.s.glass ? c.toggle('liquid', t('Liquid ripple'), t('Adds a moving distortion to the glass'), { smooth: true }) : null,
-      app.supportsAcrylic ? c.toggle('acrylic', t('Window glass backdrop'), t('Use the Windows 11 acrylic material')) : null,
       c.toggle('aurora', t('Drifting colour blobs'), '', { smooth: true }),
       c.slider('background.dim', t('Darken background'), '', { min: 0, max: 90, step: 5, scale: 100, fmt: pct }),
       c.slider('background.blur', t('Blur background'), '', { min: 0, max: 40, step: 1, fmt: (v) => `${v}px` }),
@@ -476,7 +475,7 @@ function tabSystem(app, c) {
 
     c.group(t('Window'), c.inset(
       c.toggle('alwaysOnTop', t('Keep on top')),
-      c.toggle('autoHideUI', t('Auto-hide the controls'), t('Hides the dock when the mouse rests')),
+      c.toggle('autoHideUI', t('Auto-hide the controls'), t('Hides the window buttons when the mouse rests')),
       c.slider('opacity', t('Window opacity'), '', { min: 20, max: 100, step: 5, scale: 100, fmt: pct }),
       c.toggle('hideOnBlur', t('Hide when it loses focus')),
       c.toggle('clickThrough', t('Let clicks pass through'),
@@ -566,7 +565,7 @@ export class Panel {
     closeAny();
     document.body.classList.remove('panel-open');
     this.el.setAttribute('aria-hidden', 'true');
-    this.app.syncDock();
+    this.app.syncChrome();
   }
 
   toggle(tab) {
@@ -587,6 +586,6 @@ export class Panel {
     this.body.querySelectorAll('[data-ext]').forEach((a) => {
       a.onclick = (e) => { e.preventDefault(); window.api.app.openExternal(a.dataset.ext); };
     });
-    this.app.syncDock();
+    this.app.syncChrome();
   }
 }

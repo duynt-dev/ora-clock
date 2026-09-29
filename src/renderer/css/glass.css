@@ -77,7 +77,7 @@ body.no-glass .glass > .liquid-layer { display: none; }
 
 /* The floating chrome sits right on top of the clock, so it gets an opaque
    base under the tint plus a slightly heavier rim. */
-#dock, #player-bar, #focus-hud {
+#player-bar, #focus-hud {
   background:
     linear-gradient(135deg, var(--glass-tint-a), var(--glass-tint-b) 42%, var(--glass-tint-a)),
     color-mix(in srgb, var(--panel-solid) 55%, transparent);
@@ -87,7 +87,6 @@ body.no-glass .glass > .liquid-layer { display: none; }
     inset 0 0 30px rgba(255,255,255,.06);
 }
 
-body.accent-glow #dock,
 body.accent-glow #player-bar,
 body.accent-glow #panel {
   box-shadow:

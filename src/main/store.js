@@ -11,7 +11,6 @@ const DEFAULTS = {
   glass: true,               // liquid glass panels
   glassStrength: 18,         // backdrop blur px
   liquid: false,             // animated refraction layer on top of the blur
-  acrylic: true,             // native Win11 window backdrop
   accentGlow: true,
   aurora: false,             // drifting colour blobs behind the glass
   background: { type: 'theme', value: '', blur: 0, dim: 0.35 }, // theme | gradient | image | youtube
